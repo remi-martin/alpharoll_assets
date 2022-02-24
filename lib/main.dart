@@ -36,18 +36,21 @@ class _ProcessingViewState extends State<ProcessingView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const AnimatedProcessingIcon(
-              dimension: 120,
+            const SizedBox.square(
+              dimension: 100,
+              child: AnimatedProcessingIcon(
+                dimension: 120,
+              ),
             ),
             const Divider(),
             AnimatedProcessingIcon(
-              dimension: 120,
+              dimension: 100,
               animation: ProcessingAnimations.leave,
               maxLeaveWidth: MediaQuery.of(context).size.width,
             ),
             const Divider(),
             const AnimatedProcessingIcon(
-              dimension: 120,
+              dimension: 100,
               animation: ProcessingAnimations.rotate,
             ),
           ],
@@ -150,7 +153,7 @@ class _AnimatedProcessingIconState extends State<AnimatedProcessingIcon>
         .animate(CurvedAnimation(
       parent: _controller,
       curve: const Interval(
-        0.0, 0.6,
+        0.0, 0.7,
         curve: Curves.easeInOutSine,
       ),
     ),
@@ -159,7 +162,7 @@ class _AnimatedProcessingIconState extends State<AnimatedProcessingIcon>
         .animate(CurvedAnimation(
       parent: _controller,
       curve: const Interval(
-        0.2, 0.7,
+        0.2, 0.8,
         curve: Curves.easeInOutCubic,
       ),
     ),
@@ -168,7 +171,7 @@ class _AnimatedProcessingIconState extends State<AnimatedProcessingIcon>
         .animate(CurvedAnimation(
       parent: _controller,
       curve: const Interval(
-        0.4, 0.8,
+        0.3, 0.9,
         curve: Curves.easeInOutQuad,
       ),
     ),
@@ -186,7 +189,7 @@ class _AnimatedProcessingIconState extends State<AnimatedProcessingIcon>
         .animate(CurvedAnimation(
       parent: _controller,
       curve: const Interval(
-        0.0, 0.6,
+        0.0, 0.7,
         curve: Curves.easeInOutSine,
       ),
     ),
@@ -195,7 +198,7 @@ class _AnimatedProcessingIconState extends State<AnimatedProcessingIcon>
         .animate(CurvedAnimation(
       parent: _controller,
       curve: const Interval(
-        0.2, 0.7,
+        0.1, 0.75,
         curve: Curves.easeInOutCubic,
       ),
     ),
@@ -204,7 +207,7 @@ class _AnimatedProcessingIconState extends State<AnimatedProcessingIcon>
         .animate(CurvedAnimation(
       parent: _controller,
       curve: const Interval(
-        0.4, 0.8,
+        0.2, 0.75,
         curve: Curves.easeInOutQuad,
       ),
     ),
@@ -220,8 +223,8 @@ class _AnimatedProcessingIconState extends State<AnimatedProcessingIcon>
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: widget.dimension,
+    return SizedBox(
+      width: widget.dimension,
       child: LayoutBuilder(
         builder: (context, constraints) {
           return Stack(
@@ -249,15 +252,18 @@ class _AnimatedProcessingIconState extends State<AnimatedProcessingIcon>
         _buildHexagon(dimension: heightC, turn: hexC.value),
       ];
       case ProcessingAnimations.leave: return [
-        _buildHexagon(dimension: heightA, offset: Offset(
-          _leaveTranslation(hexA.value), 0,
-        )),
-        _buildHexagon(dimension: heightB, offset: Offset(
-          _leaveTranslation(hexB.value), 0,
-        )),
-        _buildHexagon(dimension: heightC, offset: Offset(
-          _leaveTranslation(hexC.value), 0,
-        )),
+        _buildHexagon(dimension: heightA,
+          turn: hexA.value/(widget.maxLeaveWidth+widget.dimension),
+          offset: Offset(_leaveTranslation(hexA.value), 0),
+        ),
+        _buildHexagon(dimension: heightB,
+          turn: hexB.value/(widget.maxLeaveWidth+widget.dimension),
+          offset: Offset(_leaveTranslation(hexB.value), 0),
+        ),
+        _buildHexagon(dimension: heightC,
+          turn: hexC.value/(widget.maxLeaveWidth+widget.dimension),
+          offset: Offset(_leaveTranslation(hexC.value), 0),
+        ),
       ];
       default: return  [
         _buildHexagon(dimension: heightA - hexA.value),

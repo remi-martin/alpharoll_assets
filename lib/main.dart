@@ -1,15 +1,30 @@
-import 'dart:math';
-
+import 'package:alpha_roll/views/action_list_view.dart';
+import 'package:alpha_roll/views/animated_page_scroll_view.dart';
+import 'package:alpha_roll/views/circular_bottom_navigation_view.dart';
+import 'package:alpha_roll/views/processing_view.dart';
+import 'package:alpha_roll/views/tooltip_list_view.dart';
+import 'package:alpha_roll/widgets/long_press_dial.dart';
+import 'package:alpha_roll/widgets/search_bar.dart';
+import 'package:custom_refresh_indicator/custom_refresh_indicator.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+
+import 'widgets/animated_processing.dart';
+import 'views/camera_view.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -17,278 +32,169 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const ProcessingView(),
+      home: const MainView(),
     );
   }
 }
 
-class ProcessingView extends StatefulWidget {
-  const ProcessingView({Key? key}) : super(key: key);
+class MainView extends StatefulWidget {
+  const MainView({Key? key}) : super(key: key);
 
   @override
-  _ProcessingViewState createState() => _ProcessingViewState();
+  _MainViewState createState() => _MainViewState();
 }
-class _ProcessingViewState extends State<ProcessingView> {
+class _MainViewState extends State<MainView> {
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox.square(
-              dimension: 100,
-              child: AnimatedProcessingIcon(
-                dimension: 120,
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).cardColor,
+          title: const Text('Main', style: TextStyle(
+              color: Colors.black
+          )),
+          actions: [
+            IconButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CameraView())
               ),
-            ),
-            const Divider(),
-            AnimatedProcessingIcon(
-              dimension: 100,
-              animation: ProcessingAnimations.leave,
-              maxLeaveWidth: MediaQuery.of(context).size.width,
-            ),
-            const Divider(),
-            const AnimatedProcessingIcon(
-              dimension: 100,
-              animation: ProcessingAnimations.rotate,
+              icon: const Icon(Icons.camera_alt, color: Colors.deepOrange,),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-enum ProcessingAnimations {
-  scale,
-  rotate,
-  scaleRotate,
-  leave,
-}
-
-class AnimatedProcessingIcon extends StatefulWidget {
-  const AnimatedProcessingIcon({Key? key,
-    this.animation = ProcessingAnimations.scale, this.maxLeaveWidth = 100,
-    this.dimension = 120,
-  }) : super(key: key);
-
-  final ProcessingAnimations animation;
-  final double maxLeaveWidth;
-  final double dimension;
-
-  @override
-  _AnimatedProcessingIconState createState() => _AnimatedProcessingIconState();
-}
-class _AnimatedProcessingIconState extends State<AnimatedProcessingIcon>
-    with TickerProviderStateMixin {
-
-  late AnimationController _controller;
-  late final Animation<double> hexA;
-  late final Animation<double> hexB;
-  late final Animation<double> hexC;
-
-  @override
-  void initState() {
-    switch(widget.animation) {
-      case ProcessingAnimations.scale: _scaleAnimationBuilder();
-        break;
-      case ProcessingAnimations.rotate: _rotateAnimationBuilder();
-        break;
-      case ProcessingAnimations.leave: _leaveAnimationBuilder();
-        break;
-      default: _scaleAnimationBuilder();
-        break;
-    }
-    super.initState();
-  }
-
-  void _scaleAnimationBuilder() {
-    _controller = AnimationController(
-        duration: const Duration(milliseconds: 1000),
-        reverseDuration: const Duration(milliseconds: 300),
-        vsync: this
-    )..addListener(() {
-      if(mounted) setState(() {});
-    });
-    hexA = Tween<double>(begin: 0, end: widget.dimension*0.3)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.0, 0.3,
-        curve: Curves.easeIn,
-      ),
-    ),
-    );
-    hexB = Tween<double>(begin: 0, end: widget.dimension*0.27)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.1, 0.6,
-        curve: Curves.easeInOut,
-      ),
-    ),
-    );
-    hexC = Tween<double>(begin: 0, end: widget.dimension*0.2)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.4, 1,
-        curve: Curves.easeOutQuart,
-      ),
-    ),
-    );
-    _controller.repeat(
-      reverse: true,
-    );
-  }
-  void _rotateAnimationBuilder() {
-    _controller = AnimationController(
-        duration: const Duration(milliseconds: 3000),
-        vsync: this
-    )..addListener(() {
-      if(mounted) setState(() {});
-    });
-    hexA = Tween<double>(begin: 0, end: 1)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.0, 0.7,
-        curve: Curves.easeInOutSine,
-      ),
-    ),
-    );
-    hexB = Tween<double>(begin: 0, end: -2)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.2, 0.8,
-        curve: Curves.easeInOutCubic,
-      ),
-    ),
-    );
-    hexC = Tween<double>(begin: 0, end: 3)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.3, 0.9,
-        curve: Curves.easeInOutQuad,
-      ),
-    ),
-    );
-    _controller.repeat();
-  }
-  void _leaveAnimationBuilder() {
-    _controller = AnimationController(
-        duration: const Duration(milliseconds: 2000),
-        vsync: this
-    )..addListener(() {
-      if(mounted) setState(() {});
-    });
-    hexA = Tween<double>(begin: 0, end: widget.maxLeaveWidth+widget.dimension)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.0, 0.7,
-        curve: Curves.easeInOutSine,
-      ),
-    ),
-    );
-    hexB = Tween<double>(begin: 0, end: widget.maxLeaveWidth+widget.dimension)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.1, 0.75,
-        curve: Curves.easeInOutCubic,
-      ),
-    ),
-    );
-    hexC = Tween<double>(begin: 0, end: widget.maxLeaveWidth+widget.dimension)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.2, 0.75,
-        curve: Curves.easeInOutQuad,
-      ),
-    ),
-    );
-    _controller.repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: widget.dimension,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Stack(
-            alignment: Alignment.center,
-            children: _buildHexagonList(constraints),
-          );
-        },
-      ),
-    );
-  }
-
-  List<Widget> _buildHexagonList(BoxConstraints constraints) {
-    double heightA = constraints.maxWidth;
-    double heightB = constraints.maxWidth*0.7;
-    double heightC = constraints.maxWidth*0.4;
-    switch(widget.animation) {
-      case ProcessingAnimations.scale: return [
-        _buildHexagon(dimension: heightA - hexA.value),
-        _buildHexagon(dimension: heightB - hexB.value),
-        _buildHexagon(dimension: heightC - hexC.value),
-      ];
-      case ProcessingAnimations.rotate: return [
-        _buildHexagon(dimension: heightA, turn: hexA.value),
-        _buildHexagon(dimension: heightB, turn: hexB.value),
-        _buildHexagon(dimension: heightC, turn: hexC.value),
-      ];
-      case ProcessingAnimations.leave: return [
-        _buildHexagon(dimension: heightA,
-          turn: hexA.value/(widget.maxLeaveWidth+widget.dimension),
-          offset: Offset(_leaveTranslation(hexA.value), 0),
-        ),
-        _buildHexagon(dimension: heightB,
-          turn: hexB.value/(widget.maxLeaveWidth+widget.dimension),
-          offset: Offset(_leaveTranslation(hexB.value), 0),
-        ),
-        _buildHexagon(dimension: heightC,
-          turn: hexC.value/(widget.maxLeaveWidth+widget.dimension),
-          offset: Offset(_leaveTranslation(hexC.value), 0),
-        ),
-      ];
-      default: return  [
-        _buildHexagon(dimension: heightA - hexA.value),
-        _buildHexagon(dimension: heightB - hexB.value),
-        _buildHexagon(dimension: heightC - hexC.value),
-      ];
-    }
-  }
-
-  double _leaveTranslation(double value) {
-    if(value <= (widget.maxLeaveWidth+widget.dimension)/2) return value;
-    return value-(widget.maxLeaveWidth+widget.dimension);
-  }
-
-  _buildHexagon({Offset offset = Offset.zero, double dimension = 100,
-    double turn = 0, String hexagon = 'assets/hexagon.png'
-  }) {
-    return Transform.translate(
-      offset: offset,
-      child: Transform.rotate(
-        angle: turn * pi,
-        child: SizedBox.square(
-          dimension: dimension,
-          child: Image.asset(hexagon,
-            fit: BoxFit.contain,
+        body: LongPressDial(
+          actions: [
+            ActionCircle(
+              color: Colors.white,
+              hoveredColor: Colors.red,
+              child: const Icon(Icons.edit),
+              borderRadius: BorderRadius.circular(30.0)
+            ),
+            ActionCircle(
+                color: Colors.white,
+                hoveredColor: Colors.green,
+                child: const Icon(Icons.share),
+                borderRadius: BorderRadius.circular(30.0)
+            ),
+            ActionCircle(
+                color: Colors.white,
+                hoveredColor: Colors.blue,
+                child: const Icon(Icons.download),
+                borderRadius: BorderRadius.circular(30.0)
+            ),
+            ActionCircle(
+                color: Colors.white,
+                hoveredColor: Colors.orange,
+                child: const Icon(Icons.drive_file_move),
+                borderRadius: BorderRadius.circular(30.0)
+            ),
+          ],
+          child: CustomRefreshIndicator(
+            offsetToArmed: kToolbarHeight,
+            child: Container(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              child: CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    backgroundColor: Theme.of(context).cardColor,
+                    toolbarHeight: 0.0,
+                    collapsedHeight: 0.0,
+                    expandedHeight: kToolbarHeight*2+20,
+                    flexibleSpace: const SliverSearchBar(),
+                  ),
+                  SliverList(delegate: SliverChildListDelegate([
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ProcessingView())
+                      ),
+                      child: const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text('Processing View', textAlign: TextAlign.center,),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const TooltipListView())
+                      ),
+                      child: const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text('Tooltip View', textAlign: TextAlign.center,),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const CircularBottomNavigationView())
+                      ),
+                      child: const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text('Map View', textAlign: TextAlign.center,),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ActionListView())
+                      ),
+                      child: const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text('Action List View', textAlign: TextAlign.center,),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const AnimatedPageView())
+                      ),
+                      child: const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text('Animated Page View', textAlign: TextAlign.center,),
+                        ),
+                      ),
+                    ),
+                  ])),
+                ],
+              ),
+            ),
+            builder: (BuildContext context, Widget child, IndicatorController controller) {
+              return AnimatedBuilder(
+                animation: controller,
+                builder: (BuildContext context, _) {
+                  return Stack(
+                    children: [
+                      Container(
+                        height: kToolbarHeight*3,
+                        alignment: Alignment.topCenter,
+                        color: Theme.of(context).cardColor,
+                        child: SizedBox(
+                          height: kToolbarHeight*2,
+                          child: Center(
+                            child: AnimatedProcessingIcon(
+                              dimension: 60,
+                              animation: ProcessingAnimations.leave,
+                              maxLeaveWidth: MediaQuery.of(context).size.width,
+                              isActive: controller.isLoading,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Transform.translate(
+                        offset: Offset(0, controller.value*kToolbarHeight*2),
+                        child: child,
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+            onRefresh: () => Future.delayed(const Duration(seconds: 3)),
           ),
         ),
       ),
@@ -296,102 +202,3 @@ class _AnimatedProcessingIconState extends State<AnimatedProcessingIcon>
   }
 }
 
-class AnimatedPushIcon extends StatefulWidget {
-  const AnimatedPushIcon({Key? key}) : super(key: key);
-
-  @override
-  _AnimatedPushIconState createState() => _AnimatedPushIconState();
-}
-class _AnimatedPushIconState extends State<AnimatedPushIcon> with TickerProviderStateMixin {
-
-  late AnimationController _controller;
-  late final Animation<double> hexA;
-  late final Animation<double> hexB;
-  late final Animation<double> hexC;
-
-
-  @override
-  void initState() {
-    _controller = AnimationController(
-        duration: const Duration(milliseconds: 400),
-        reverseDuration: const Duration(milliseconds: 300),
-        vsync: this,
-        upperBound: 0.8,
-    )..addListener(() {
-      if(mounted) setState(() {});
-    });
-    hexA = Tween<double>(begin: 0, end: 30)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.0, 0.3,
-        curve: Curves.easeIn,
-      ),
-    ),
-    );
-    hexB = Tween<double>(begin: 0, end: 25)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.1, 0.6,
-        curve: Curves.easeInOut,
-      ),
-    ),
-    );
-    hexC = Tween<double>(begin: 0, end: 20)
-        .animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(
-        0.5, 0.8,
-        curve: Curves.easeOutQuart,
-      ),
-    ),
-    );
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        _controller.forward().then(
-          (value) => _controller.reverse()
-        );
-      },
-      onTapDown: (details) => _controller.forward(),
-      onPanDown: (details) => print("hello"),
-      child: SizedBox.square(
-        dimension: 120,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox.square(
-              dimension: 120 - hexA.value,
-              child: Image.asset('assets/hexagon.png',
-                fit: BoxFit.contain,
-              ),
-            ),
-            SizedBox.square(
-              dimension: 80 - hexB.value,
-              child: Image.asset('assets/hexagon.png',
-                fit: BoxFit.contain,
-              ),
-            ),
-            SizedBox.square(
-              dimension: 50 - hexC.value,
-              child: Image.asset('assets/hexagon.png',
-                fit: BoxFit.contain,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

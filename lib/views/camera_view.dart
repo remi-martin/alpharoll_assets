@@ -100,6 +100,7 @@ class _CameraViewState extends State<CameraView> {
             if(position >= 1) {
               _controller!.stopCamera();
             } else {
+              _focusNode.unfocus();
               _controller!.resumeCamera();
             }
           }),

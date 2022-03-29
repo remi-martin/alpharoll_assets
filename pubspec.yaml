@@ -44,7 +44,7 @@ dependencies:
   flutter_keyboard_visibility: ^5.2.0
   flutter_slidable:
     git:
-      url: git://github.com/remi-martin/flutter_slidable.git
+      url: https://github.com/remi-martin/flutter_slidable.git
   flutter_svg: ^1.0.3
   confirm_dialog: ^1.0.1
   sensors:

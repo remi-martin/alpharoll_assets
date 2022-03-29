@@ -1,14 +1,13 @@
 import 'package:alpha_roll/views/action_list_view.dart';
 import 'package:alpha_roll/views/animated_page_scroll_view.dart';
+import 'package:alpha_roll/views/character_page_view.dart';
 import 'package:alpha_roll/views/circular_bottom_navigation_view.dart';
 import 'package:alpha_roll/views/processing_view.dart';
 import 'package:alpha_roll/views/tooltip_list_view.dart';
 import 'package:alpha_roll/widgets/long_press_dial.dart';
 import 'package:alpha_roll/widgets/search_bar.dart';
 import 'package:custom_refresh_indicator/custom_refresh_indicator.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import 'widgets/animated_processing.dart';
@@ -156,6 +155,17 @@ class _MainViewState extends State<MainView> {
                         child: Padding(
                           padding: EdgeInsets.all(20.0),
                           child: Text('Animated Page View', textAlign: TextAlign.center,),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const CharacterPageView())
+                      ),
+                      child: const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text('Characters page view', textAlign: TextAlign.center,),
                         ),
                       ),
                     ),

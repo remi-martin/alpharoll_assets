@@ -1,6 +1,3 @@
-import 'dart:async';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class CharacterPageView extends StatefulWidget {
@@ -9,26 +6,36 @@ class CharacterPageView extends StatefulWidget {
   @override
   State<CharacterPageView> createState() => _CharacterPageViewState();
 }
-
-class _CharacterPageViewState extends State<CharacterPageView> {
-  late final PageController _pageController;
+class _CharacterPageViewState extends State<CharacterPageView> with SingleTickerProviderStateMixin {
+  late PageController _pageController;
+  late final AnimationController _animationController;
+  late final Animation<double> _animation;
 
   late double _pageOffset;
+  bool _details = false;
 
-  final int length = 10;
+  final int _length = 10;
 
   @override
   void initState() {
+    _animationController = AnimationController(vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _animation = Tween<double>(begin: 0, end: 1)
+        .animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
     _pageController = PageController(
       viewportFraction: 0.8,
-      initialPage: length ~/ 2,
+      initialPage: _length ~/ 2,
     )..addListener(() {
-        if (mounted && _pageController.page != null) {
-          setState(() {
-            _pageOffset = _pageController.page!;
-          });
-        }
-      });
+      if (mounted && _pageController.page != null) {
+        setState(() {
+          _pageOffset = _pageController.page!;
+        });
+      }
+    });
     _pageOffset = _pageController.initialPage.toDouble();
     super.initState();
   }
@@ -47,335 +54,248 @@ class _CharacterPageViewState extends State<CharacterPageView> {
     }
     return 0;
   }
+  double _getPageTransform(int index) {
+    if (_pageOffset.floor() == index) {
+      return -50 * (_pageOffset - _pageOffset.floor()).abs();
+    } else if (_pageOffset.ceil() == index) {
+      return 50 * (1 - (_pageOffset - _pageOffset.floor()).abs());
+    }
+    if(index < _pageOffset) return 50;
+    return -50;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.grey, Colors.white],
+          stops: [0, 0.8],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.grey.shade800,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: const [
-            Icon(Icons.arrow_back_ios, size: 20),
-            Text(
-              "Annuler",
-              style: TextStyle(fontSize: 16),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: const [
+              Icon(Icons.arrow_back_ios, size: 20),
+              Text(
+                "Annuler",
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+        body: Stack(
+          children: [
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 20,
+                  ),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 300),
+                    opacity: _details ? 0 : 1,
+                    child: const Text("Choisissez votre race",
+                      style: TextStyle(
+                        fontSize: 30,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: AnimatedBuilder(
+                      animation: _animationController,
+                      builder: (context, animation) {
+                        _pageController = PageController(
+                          initialPage: _pageOffset.round(),
+                          viewportFraction: 0.8 + _animation.value * 0.2,
+                        )..addListener(() {
+                          if (mounted && _pageController.page != null
+                              && _animationController.isDismissed) {
+                            WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+                              setState(() {
+                                _pageOffset = _pageController.page!;
+                              });
+                            });
+                          }
+                        });
+                        return PageView.builder(
+                          controller: _pageController,
+                          physics: _details
+                              ? const NeverScrollableScrollPhysics()
+                              : const BouncingScrollPhysics(),
+                          itemCount: _length,
+                          itemBuilder: (context, index) {
+                            return Align(
+                              alignment: Alignment.bottomCenter,
+                              child: CharacterCard(
+                                controller: _animationController,
+                                animation: _animation,
+                                pageOffset: _getPageOffset(index),
+                                onAction: () => setState(() {
+                                  _details = !_details;
+                                  if (_details) {
+                                    _animationController.forward();
+                                  } else {
+                                    _animationController.reverse();
+                                  }
+                                }),
+                              ),
+                            );
+                          },
+                        );
+                      }
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  child: AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, animation) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(
+                          vertical: 32,
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        width: MediaQuery.of(context).size.width*0.7
+                            + MediaQuery.of(context).size.width * 0.1 * _animation.value,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.blue.shade900,
+                        ),
+                        child: const Text(
+                          "Choisir",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    }
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-      ),
-      body: Column(
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(
-              vertical: 20,
-            ),
-            child: Text(
-              "Choisissez votre race",
-              style: TextStyle(fontSize: 30),
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: PageView.builder(
-                controller: _pageController,
-                physics: const BouncingScrollPhysics(),
-                itemCount: length,
-                itemBuilder: (context, index) {
-                  return Align(
-                    alignment: Alignment.lerp(
-                      Alignment.bottomCenter,
-                      Alignment.topCenter,
-                      _getPageOffset(index),
-                    )!,
-                    child: CharacterCard(
-                      index: index,
-                      pageOffset: _getPageOffset(index),
-                      onAction: () {
-                        Navigator.of(context).push(
-                          PageRouteBuilder(
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    CharacterPage(
-                              index: index,
-                            ),
-                            opaque: false,
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          )
-        ],
       ),
     );
   }
 }
 
 class CharacterCard extends StatefulWidget {
-  const CharacterCard(
-      {Key? key, this.onAction, this.pageOffset = 0.0, this.index = 0})
-      : super(key: key);
+  const CharacterCard({Key? key, this.onAction, this.pageOffset = 0.0, this.index = 0,
+    required this.controller, required this.animation,
+  }) : super(key: key);
 
   final Function()? onAction;
   final double pageOffset;
   final int index;
+  final AnimationController controller;
+  final Animation<double> animation;
 
   @override
   State<CharacterCard> createState() => _CharacterCardState();
 }
-
-class _CharacterCardState extends State<CharacterCard> {
-  late final Timer _timer;
-
-  double _dragOffset = 0.0;
-  double _filteredDragOffset = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      if ((_dragOffset * 1000).floor() !=
-          (_filteredDragOffset * 1000).floor()) {
-        setState(() {
-          _filteredDragOffset += (_dragOffset - _filteredDragOffset) * 0.1;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
+class _CharacterCardState extends State<CharacterCard> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        double maxOffset = MediaQuery.of(context).size.height / 4;
+        double cardHeight = constraints.maxHeight * 0.9
+            + constraints.maxHeight * 0.1
+                * (widget.pageOffset - widget.animation.value);
+        double cardWidth = constraints.maxWidth * 0.9
+            + constraints.maxWidth * 0.1 * widget.animation.value;
+
+        double contentHeight = constraints.maxHeight * 0.9
+            + constraints.maxHeight * 0.1 * widget.animation.value;
         return GestureDetector(
-          onVerticalDragStart: (details) => setState(() {
-            _dragOffset = 0;
-          }),
-          onVerticalDragUpdate: (details) => setState(() {
-            _dragOffset += details.delta.dy * 0.7;
-            if (_dragOffset > maxOffset) _dragOffset = maxOffset;
-            if (_dragOffset < 0) _dragOffset = 0;
-          }),
-          onVerticalDragEnd: (details) => setState(() {
-            if (_filteredDragOffset > maxOffset * 0.8 &&
-                widget.onAction != null) widget.onAction!();
-            _dragOffset = 0;
-          }),
           onTap: widget.onAction,
-          child: Transform.translate(
-            offset: Offset(0, _filteredDragOffset),
-            child: Hero(
-              tag: 'card ${widget.index}',
-              child: Container(
-                height: constraints.maxHeight * 0.9,
-                width: constraints.maxWidth * 0.9,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  color: Theme.of(context).cardColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.5),
-                      blurRadius: 1,
-                      spreadRadius: 0.1,
-                      offset: const Offset(1, 1),
+          child: Container(
+            height: cardHeight,
+            width: cardWidth,
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+              color: Colors.white,
+            ),
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              height: contentHeight,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: 32,
+                      left: 32,
+                      right: 32,
+                      bottom: 8,
                     ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(
-                            top: 32, left: 32, right: 32, bottom: 8),
-                        child:
-                            LayoutBuilder(builder: (context, innerConstraints) {
-                          return SizedBox(
-                            width: innerConstraints.maxWidth,
-                            height: innerConstraints.maxWidth * 1.1,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade300,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
+                    child: LayoutBuilder(builder: (context, imageConstraints) {
+                      double imageHeight = imageConstraints.maxWidth * 1.1 * (1-widget.animation.value);
+                      double imageWidth = imageConstraints.maxWidth * (1-widget.animation.value);
+                      return SizedBox(
+                        width: imageWidth,
+                        height: imageHeight,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Center(
+                          child: Text("Nain",
+                            style: TextStyle(
+                              fontSize: 30,
                             ),
-                          );
-                        }),
-                      ),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Center(
-                                child: Text(
-                              "Nain",
-                              style: TextStyle(
-                                fontSize: 30,
-                              ),
-                            )),
-                            const Text(
-                              "Le nain est petit mais robuste.\nIl aime amasser de l’or. ",
-                              textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const Text("Le nain est petit mais robuste.\nIl aime amasser de l’or. ",
+                          textAlign: TextAlign.center,
+                        ),
+                        Column(
+                          children: const [
+                            Text("Caractéristiques",
+                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            Column(
-                              children: const [
-                                Text(
-                                  "Caractéristiques",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                Text("+2 CON, -2 DEX"),
-                              ],
-                            ),
-                            Container(
-                              margin: const EdgeInsets.all(8),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(24),
-                                  color: Colors.blue.shade700),
-                              child: const Text(
-                                "Choisir",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
+                            Text("+2 CON, -2 DEX"),
                           ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                  Container(
+                    height: constraints.maxHeight * 0.5 * widget.animation.value,
+                  ),
+                ],
               ),
             ),
           ),
         );
       },
-    );
-  }
-}
-
-class CharacterPage extends StatefulWidget {
-  const CharacterPage({Key? key, this.index = 0}) : super(key: key);
-
-  final int index;
-
-  @override
-  State<CharacterPage> createState() => _CharacterPageState();
-}
-
-class _CharacterPageState extends State<CharacterPage> {
-  late final Timer _timer;
-
-  final double _dragStartDelay = 100;
-
-  double _dragPosition = 0.0;
-  double _dragOffset = 0.0;
-  double _filteredDragOffset = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      if ((_dragOffset * 1000).floor() !=
-          (_filteredDragOffset * 1000).floor()) {
-        setState(() {
-          _filteredDragOffset += (_dragOffset - _filteredDragOffset) * 0.1;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    MediaQueryData screen = MediaQuery.of(context);
-    double maxOffset = screen.size.height + _dragStartDelay;
-    return GestureDetector(
-      onVerticalDragStart: (details) => setState(() {
-        _dragPosition = 0;
-        _dragOffset = 0;
-      }),
-      onVerticalDragUpdate: (details) => setState(() {
-        _dragPosition += details.delta.dy * 0.8;
-        if (_dragPosition < _dragStartDelay) return;
-        if (_dragPosition > maxOffset) {
-          _dragOffset = 1;
-        } else if (_dragPosition < 0) {
-          _dragOffset = 0;
-        } else {
-          _dragOffset = _dragPosition / maxOffset;
-        }
-
-        if (_filteredDragOffset > 0.4) Navigator.of(context).pop();
-      }),
-      onVerticalDragEnd: (details) => setState(() {
-        _dragPosition = 0;
-        _dragOffset = 0;
-      }),
-      child: Transform.translate(
-        offset: Offset(0, _filteredDragOffset * screen.size.height),
-        child: Transform.scale(
-          scale: 1 - (0.3 * _filteredDragOffset),
-          child: Hero(
-            tag: 'card ${widget.index}',
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              alignment: Alignment.topCenter,
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius:
-                    BorderRadius.circular(30 * _filteredDragOffset * 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.5),
-                    blurRadius: 1,
-                    spreadRadius: 0.1,
-                    offset: const Offset(1, 1),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(
-                    top: screen.padding.top * (1 - _filteredDragOffset * 2)),
-                child: LayoutBuilder(builder: (context, innerConstraints) {
-                  return SizedBox.square(
-                    dimension: innerConstraints.maxWidth,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
